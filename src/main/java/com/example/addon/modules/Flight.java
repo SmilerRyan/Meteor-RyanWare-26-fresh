@@ -323,20 +323,12 @@ public class Flight extends Module {
         return false;
     }
 
+
+
 private void handleBoatFly() {
-    // Boat Fly is disabled: do absolutely nothing.
-    if (!boatFly.get()) return;
-
-    // Player not available.
-    if (mc.player == null) return;
-
-    // Not riding anything.
     if (mc.player.getVehicle() == null) return;
 
     var vehicle = mc.player.getVehicle();
-
-    // Only continue for boats.
-    if (vehicle == null) return;
 
     if (!vehicle.getType().toString().toLowerCase().contains("boat")) {
         return;
@@ -344,7 +336,7 @@ private void handleBoatFly() {
 
     double speedValue = boatFlySpeed.get();
 
-    // W/S movement.
+    // W/S controls forward and backward movement.
     double forward = 0.0;
 
     if (mc.options.keyUp.isDown()) {
@@ -355,13 +347,13 @@ private void handleBoatFly() {
         forward -= 1.0;
     }
 
-    // Use the player's facing direction.
+    // Use player/boat facing direction.
     double yaw = Math.toRadians(mc.player.getYRot());
 
     double moveX = -Math.sin(yaw) * forward;
     double moveZ = Math.cos(yaw) * forward;
 
-    // Hover by default.
+    // Keep the boat hovering unless vertical movement is requested.
     double vertical = 0.0;
 
     // Space = up.
@@ -369,11 +361,12 @@ private void handleBoatFly() {
         vertical = speedValue;
     }
 
-    // Configured sneak key = down.
+    // Control / sneak = down.
     if (mc.options.keyShift.isDown()) {
         vertical = -speedValue;
     }
 
+    // Cancel gravity by explicitly setting Y velocity to zero when idle.
     vehicle.setDeltaMovement(
         moveX * speedValue,
         vertical,
