@@ -1,0 +1,17 @@
+I've reviewed and checked every feature of this and it all works great, here is what needs adjusting
+
+FIX - player list - works but the height player is too long it takes basically almost half as much height as it eeds to that theres a empty line between each entry, colors etc all work
+ADD - death coords - when you die it sends in your chat your coords in any message format you like, it should be compatible with auto respawn so it still sends even if you respawn instantly whre you last was before dying not where you respawn at
+ADD - chat translator  - Mainly recieve only, send/recieve/both options would be nice
+ADD - player alerter - same as meteor but improved
+ADD - player tracers - meteor but stright to the point
+Add - waypoint heads
+ADD - ping in tab - like in "better tab" but only that mixin feature
+ADD - chat masking
+ADD - authme servers auto login
+ADD - Chat Always Visible Option via mixin
+ADD - Chat Always Max Width via mixin
+ADD - More Ping module
+
+ive provided the old source with all these features as well as the new source for you to take features from.
+
