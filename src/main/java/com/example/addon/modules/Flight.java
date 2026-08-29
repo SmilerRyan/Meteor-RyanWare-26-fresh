@@ -7,7 +7,6 @@ import meteordevelopment.orbit.EventHandler;
 import net.minecraft.client.Minecraft;
 import com.example.addon.AddonTemplate;
 
-
 public class Flight extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
     private final SettingGroup sgSafety = settings.createGroup("Safety");
@@ -92,26 +91,59 @@ public class Flight extends Module {
         .build()
     );
 
+    private final Setting<Boolean> elytraBlockSlowdown = sgSafety.add(new BoolSetting.Builder()
+        .name("elytra-block-slowdown")
+        .description("Slows Elytra movement when very close to blocks.")
+        .defaultValue(true)
+        .build()
+    );
 
-    private final Setting<Boolean> elytraBlockSlowdown = sgSafety.add(new BoolSetting.Builder().name("elytra-block-slowdown").description("Slow elytra flight near blocks.").defaultValue(true).build());
-    private final Setting<Double> elytraSlowdownSpeed = sgSafety.add(new DoubleSetting.Builder().name("elytra-slow-speed").defaultValue(1.0).min(0.05).sliderMax(5).visible(elytraBlockSlowdown::get).build());
-    private final Setting<Boolean> boatFly = sgBoat.add(new BoolSetting.Builder().name("enable").defaultValue(false).build());
-    private final Setting<Double> boatFlySpeed = sgBoat.add(new DoubleSetting.Builder().name("speed").defaultValue(1.5).min(0.05).sliderMax(10).visible(boatFly::get).build());
+    private final Setting<Double> elytraSlowdownSpeed = sgSafety.add(new DoubleSetting.Builder()
+        .name("elytra-slow-speed")
+        .description("Maximum Elytra speed when close to a block.")
+        .defaultValue(1.0)
+        .min(0.05)
+        .max(10.0)
+        .sliderMax(5.0)
+        .visible(elytraBlockSlowdown::get)
+        .build()
+    );
+
+    private final Setting<Boolean> boatFly = sgBoat.add(new BoolSetting.Builder()
+        .name("enable")
+        .description("Allows boats to fly while you are riding them.")
+        .defaultValue(false)
+        .build()
+    );
+
+    private final Setting<Double> boatFlySpeed = sgBoat.add(new DoubleSetting.Builder()
+        .name("speed")
+        .description("Boat Fly movement speed.")
+        .defaultValue(1.5)
+        .min(0.05)
+        .max(10.0)
+        .sliderMax(5.0)
+        .visible(boatFly::get)
+        .build()
+    );
 
     private final Minecraft mc = Minecraft.getInstance();
+
     private boolean wasJumping = false;
     private boolean isFlying = false;
 
-    // Vanilla-like double tap timer (~7 ticks window)
     private int jumpTimer = 0;
     private static final int DOUBLE_TAP_WINDOW = 7;
 
-    // Anti-slowdown state
     private int slowdownTick = 0;
     private int slowdownActive = 0;
 
     public Flight() {
-        super(AddonTemplate.CATEGORY, "RyanWare-Flight", "Toggle flying with double jump, like creative mode.");
+        super(
+            AddonTemplate.CATEGORY,
+            "RyanWare-Flight",
+            "Toggle flying with double jump, like creative mode."
+        );
     }
 
     @Override
@@ -152,12 +184,14 @@ public class Flight extends Module {
             }
         }
 
-        // Double-tap detection (vanilla-like)
+        // Double-tap detection
         if (!wasJumping && isJumping) {
             if (jumpTimer > 0) {
                 isFlying = !isFlying;
-                mc.player.getAbilities().mayfly = !isFlying;
-                mc.player.getAbilities().flying = !isFlying;
+
+                mc.player.getAbilities().mayfly = isFlying;
+                mc.player.getAbilities().flying = isFlying;
+
                 jumpTimer = 0;
             } else {
                 jumpTimer = DOUBLE_TAP_WINDOW;
@@ -167,7 +201,7 @@ public class Flight extends Module {
         // Countdown timer
         if (jumpTimer > 0) jumpTimer--;
 
-        // Reset on ground (vanilla behavior feel)
+        // Reset on ground
         if (mc.player.onGround() && isFlying && instantTakeoff.get()) {
             isFlying = false;
             mc.player.getAbilities().mayfly = false;
@@ -180,34 +214,65 @@ public class Flight extends Module {
             mc.player.getAbilities().flying = true;
         }
 
-        // Apply flight speed when flying
+        // Normal Flight speed
         if (isFlying && speedEnabled.get()) {
-            mc.player.getAbilities().setFlyingSpeed((float) (speed.get() * 0.05f));
+            mc.player.getAbilities().setFlyingSpeed(
+                (float) (speed.get() * 0.05f)
+            );
         }
 
-        // Elytra safety: cap speed when gliding immediately next to solid blocks.
-        if (elytraBlockSlowdown.get() && mc.player.isFallFlying() && mc.level != null) {
-            var p = mc.player.blockPosition();
-            boolean near = false;
-            for (int dx = -1; dx <= 1 && !near; dx++) for (int dy = -1; dy <= 1 && !near; dy++) for (int dz = -1; dz <= 1; dz++) {
-                if (mc.level.getBlockState(p.offset(dx, dy, dz)).isSolid()) { near = true; break; }
+        /*
+         * Elytra block safety.
+         *
+         * Do NOT modify flyingSpeed here.
+         * flyingSpeed belongs to Creative-style flight, while Elytra
+         * movement is controlled by the player's velocity.
+         */
+        if (elytraBlockSlowdown.get()
+            && mc.player.isFallFlying()
+            && mc.level != null) {
+
+            if (isNearSolidBlock()) {
+                double maxSpeed = elytraSlowdownSpeed.get();
+
+                var velocity = mc.player.getDeltaMovement();
+                double horizontalSpeed = Math.sqrt(
+                    velocity.x * velocity.x +
+                    velocity.z * velocity.z
+                );
+
+                if (horizontalSpeed > maxSpeed && horizontalSpeed > 0.0) {
+                    double multiplier = maxSpeed / horizontalSpeed;
+
+                    mc.player.setDeltaMovement(
+                        velocity.x * multiplier,
+                        velocity.y,
+                        velocity.z * multiplier
+                    );
+                }
             }
-            if (near) mc.player.getAbilities().setFlyingSpeed((float) (elytraSlowdownSpeed.get() * 0.05f));
         }
 
-        // Simple client-side boat fly.
-        if (boatFly.get() && mc.player.getVehicle() != null && mc.player.getVehicle().getType().toString().toLowerCase().contains("boat")) {
-            var v = mc.player.getVehicle();
-            var dir = mc.player.getLookAngle().normalize().scale(boatFlySpeed.get() * 0.05);
-            double y = (mc.options.keyJump.isDown() ? boatFlySpeed.get() * 0.05 : (mc.options.keyShift.isDown() ? -boatFlySpeed.get() * 0.05 : 0));
-            v.setDeltaMovement(dir.x, y, dir.z);
+        /*
+         * Simple Boat Fly.
+         *
+         * This only changes the boat's velocity. It does not modify
+         * player flight abilities or flying speed.
+         */
+        if (boatFly.get()) {
+            handleBoatFly();
         }
 
         // Bypass Vanilla Anti-kick
-        if (isFlying && !mc.player.onGround() && bypassAntiKick.get() && mc.player.tickCount % 10 < 2) {
+        if (isFlying
+            && !mc.player.onGround()
+            && bypassAntiKick.get()
+            && mc.player.tickCount % 10 < 2) {
+
             mc.player.setDeltaMovement(
                 mc.player.getDeltaMovement().x,
-                mc.player.getDeltaMovement().y + (mc.player.tickCount % 10 == 0 ? -0.04 : 0.04),
+                mc.player.getDeltaMovement().y
+                    + (mc.player.tickCount % 10 == 0 ? -0.04 : 0.04),
                 mc.player.getDeltaMovement().z
             );
         }
@@ -215,8 +280,10 @@ public class Flight extends Module {
         // Anti-slowdown
         if (antiSlowdown.get() && isFlying) {
             if (slowdownActive > 0) {
-                // mc.player.setDeltaMovement(0, mc.player.getDeltaMovement().y, 0);
-                mc.player.getAbilities().setFlyingSpeed((float) (slowdownSpeed.get() * 0.05f));
+                mc.player.getAbilities().setFlyingSpeed(
+                    (float) (slowdownSpeed.get() * 0.05f)
+                );
+
                 slowdownActive--;
             } else {
                 slowdownTick++;
@@ -229,5 +296,80 @@ public class Flight extends Module {
         }
 
         wasJumping = isJumping;
+    }
+
+    private boolean isNearSolidBlock() {
+        var pos = mc.player.blockPosition();
+
+        /*
+         * Only check the immediately adjacent blocks.
+         * This avoids slowing the Elytra simply because there is
+         * terrain somewhere nearby.
+         */
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dy = -1; dy <= 1; dy++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    if (dx == 0 && dy == 0 && dz == 0) continue;
+
+                    if (mc.level.getBlockState(
+                        pos.offset(dx, dy, dz)
+                    ).isSolid()) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private void handleBoatFly() {
+        if (mc.player.getVehicle() == null) return;
+
+        var vehicle = mc.player.getVehicle();
+
+        if (!vehicle.getType().toString().toLowerCase().contains("boat")) {
+            return;
+        }
+
+        double speedValue = boatFlySpeed.get();
+
+        var look = mc.player.getLookAngle();
+
+        /*
+         * Horizontal movement follows where the player is looking.
+         * Vertical movement is controlled independently with jump/sneak.
+         */
+        double horizontalX = look.x;
+        double horizontalZ = look.z;
+
+        double horizontalLength = Math.sqrt(
+            horizontalX * horizontalX +
+            horizontalZ * horizontalZ
+        );
+
+        if (horizontalLength > 0.0001) {
+            horizontalX /= horizontalLength;
+            horizontalZ /= horizontalLength;
+        } else {
+            horizontalX = 0.0;
+            horizontalZ = 0.0;
+        }
+
+        double vertical = 0.0;
+
+        if (mc.options.keyJump.isDown()) {
+            vertical = speedValue;
+        } else if (mc.options.keyShift.isDown()) {
+            vertical = -speedValue;
+        }
+
+        double horizontalSpeed = speedValue;
+
+        vehicle.setDeltaMovement(
+            horizontalX * horizontalSpeed,
+            vertical,
+            horizontalZ * horizontalSpeed
+        );
     }
 }
