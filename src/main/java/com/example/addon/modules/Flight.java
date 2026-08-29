@@ -315,66 +315,65 @@ public class Flight extends Module {
         return false;
     }
         
-    private void handleBoatFly() {
-        if (mc.player.getVehicle() == null) return;
+        private void handleBoatFly() {
+    if (mc.player.getVehicle() == null) return;
 
-        var vehicle = mc.player.getVehicle();
+    var vehicle = mc.player.getVehicle();
 
-        if (!vehicle.getType().toString().toLowerCase().contains("boat")) {
-            return;
-        }
-
-        double speedValue = boatFlySpeed.get();
-
-        // Instantly sync boat rotation to player's rotation.
-        vehicle.setYRot(mc.player.getYRot());
-        vehicle.setXRot(0.0f);
-        vehicle.setYHeadRot(mc.player.getYRot());
-
-        // W/S controls forward and backward movement.
-        double forward = 0.0;
-
-        if (mc.options.keyUp.isDown()) {
-            forward += 1.0;
-        }
-
-        if (mc.options.keyDown.isDown()) {
-            forward -= 1.0;
-        }
-
-        // Use the current player/boat yaw.
-        double yaw = Math.toRadians(mc.player.getYRot());
-
-        double moveX = -Math.sin(yaw) * forward;
-        double moveZ = Math.cos(yaw) * forward;
-
-        /*
-         * Space = up.
-         * Control = down.
-         * Neither = hover.
-         */
-        double vertical = 0.0;
-
-        if (mc.options.keyJump.isDown()) {
-            vertical = 1.0;
-        } else if (isControlDown()) {
-            vertical = -1.0;
-        }
-
-        /*
-        * Explicitly control all velocity components.
-        * With no vertical key pressed, Y is exactly 0,
-        * preventing gravity from pulling the boat down.
-        */
-        vehicle.setDeltaMovement(
-            moveX * speedValue,
-            vertical * speedValue,
-            moveZ * speedValue
-        );
-
-        // Prevent vanilla boat physics from applying gravity.
-        vehicle.setNoGravity(true);
+    if (!vehicle.getType().toString().toLowerCase().contains("boat")) {
+        return;
     }
+
+    double speedValue = boatFlySpeed.get();
+
+    /*
+     * Instantly rotate the boat to match the player's yaw.
+     * Only change Y rotation to avoid interfering with
+     * passenger/render rotation handling.
+     */
+    vehicle.setYRot(mc.player.getYRot());
+
+    // W/S controls forward and backward movement.
+    double forward = 0.0;
+
+    if (mc.options.keyUp.isDown()) {
+        forward += 1.0;
+    }
+
+    if (mc.options.keyDown.isDown()) {
+        forward -= 1.0;
+    }
+
+    // Use player's current yaw.
+    double yaw = Math.toRadians(mc.player.getYRot());
+
+    double moveX = -Math.sin(yaw) * forward;
+    double moveZ = Math.cos(yaw) * forward;
+
+    /*
+     * Space = up.
+     * Control = down.
+     * Neither = exactly zero vertical velocity.
+     */
+    double vertical = 0.0;
+
+    if (mc.options.keyJump.isDown()) {
+        vertical = 1.0;
+    } else if (isControlDown()) {
+        vertical = -1.0;
+    }
+
+    /*
+     * Explicitly control all velocity.
+     * No gravity override is used here.
+     */
+    vehicle.setDeltaMovement(
+        moveX * speedValue,
+        vertical * speedValue,
+        moveZ * speedValue
+    );
+}
+
     private boolean isControlDown() {
         try {
             /*
