@@ -10,6 +10,8 @@ import com.example.addon.AddonTemplate;
 
 public class Flight extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
+    private final SettingGroup sgSafety = settings.createGroup("Safety");
+    private final SettingGroup sgBoat = settings.createGroup("Boat Fly");
 
     private final Setting<Boolean> speedEnabled = sgGeneral.add(new BoolSetting.Builder()
         .name("speed-enabled")
@@ -89,6 +91,12 @@ public class Flight extends Module {
         .visible(antiSlowdown::get)
         .build()
     );
+
+
+    private final Setting<Boolean> elytraBlockSlowdown = sgSafety.add(new BoolSetting.Builder().name("elytra-block-slowdown").description("Slow elytra flight near blocks.").defaultValue(true).build());
+    private final Setting<Double> elytraSlowdownSpeed = sgSafety.add(new DoubleSetting.Builder().name("elytra-slow-speed").defaultValue(1.0).min(0.05).sliderMax(5).visible(elytraBlockSlowdown::get).build());
+    private final Setting<Boolean> boatFly = sgBoat.add(new BoolSetting.Builder().name("enable").defaultValue(false).build());
+    private final Setting<Double> boatFlySpeed = sgBoat.add(new DoubleSetting.Builder().name("speed").defaultValue(1.5).min(0.05).sliderMax(10).visible(boatFly::get).build());
 
     private final Minecraft mc = Minecraft.getInstance();
     private boolean wasJumping = false;
@@ -175,6 +183,24 @@ public class Flight extends Module {
         // Apply flight speed when flying
         if (isFlying && speedEnabled.get()) {
             mc.player.getAbilities().setFlyingSpeed((float) (speed.get() * 0.05f));
+        }
+
+        // Elytra safety: cap speed when gliding immediately next to solid blocks.
+        if (elytraBlockSlowdown.get() && mc.player.isFallFlying() && mc.level != null) {
+            var p = mc.player.blockPosition();
+            boolean near = false;
+            for (int dx = -1; dx <= 1 && !near; dx++) for (int dy = -1; dy <= 1 && !near; dy++) for (int dz = -1; dz <= 1; dz++) {
+                if (mc.level.getBlockState(p.offset(dx, dy, dz)).isSolid()) { near = true; break; }
+            }
+            if (near) mc.player.getAbilities().setFlyingSpeed((float) (elytraSlowdownSpeed.get() * 0.05f));
+        }
+
+        // Simple client-side boat fly.
+        if (boatFly.get() && mc.player.getVehicle() != null && mc.player.getVehicle().getType().toString().toLowerCase().contains("boat")) {
+            var v = mc.player.getVehicle();
+            var dir = mc.player.getLookAngle().normalize().scale(boatFlySpeed.get() * 0.05);
+            double y = (mc.options.keyJump.isDown() ? boatFlySpeed.get() * 0.05 : (mc.options.keyShift.isDown() ? -boatFlySpeed.get() * 0.05 : 0));
+            v.setDeltaMovement(dir.x, y, dir.z);
         }
 
         // Bypass Vanilla Anti-kick
