@@ -432,7 +432,7 @@ public class Flight extends Module {
          */
         if (mc.options.keyShift.isDown() && !lookingDown) {
             if (mc.player.getVehicle() == null) {
-                mc.player.startRiding(vehicle, true);
+                mc.player.startRiding(vehicle, true, true);
             }
         }
     }
