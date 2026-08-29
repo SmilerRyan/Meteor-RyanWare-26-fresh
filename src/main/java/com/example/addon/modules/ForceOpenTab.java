@@ -4,7 +4,6 @@ import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import com.example.addon.AddonTemplate;
-import net.minecraft.client.KeyMapping;
 
 
 public class ForceOpenTab extends Module {
@@ -16,13 +15,13 @@ public class ForceOpenTab extends Module {
     @Override
     public void onDeactivate() {
         if (mc.player == null || mc.options == null) return;
-        KeyMapping.set(mc.options.keyPlayerList.getKey(), false);
+        mc.options.keyPlayerList.setDown(false);
     }
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
         if (mc.player == null || mc.options == null) return;
-        KeyMapping.set(mc.options.keyPlayerList.getKey(), true);
+        mc.options.keyPlayerList.setDown(true);
     }
 
 }

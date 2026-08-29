@@ -6,7 +6,6 @@ import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.settings.StringListSetting;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.client.gui.screens.DeathScreen;
 import com.example.addon.AddonTemplate;
 
 
@@ -47,7 +46,7 @@ public class AutoRespawn extends Module {
             waitingForCommands = false;
             return;
         }
-        if (mc.gui.screen instanceof DeathScreen) {
+        if (mc.player.isDeadOrDying()) {
             mc.player.respawn();
             waitingForCommands = true;
             commandQueue.clear();

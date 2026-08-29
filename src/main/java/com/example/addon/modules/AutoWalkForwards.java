@@ -7,7 +7,6 @@ import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import com.example.addon.AddonTemplate;
-import net.minecraft.client.KeyMapping;
 
 
 public class AutoWalkForwards extends Module {
@@ -28,16 +27,16 @@ public class AutoWalkForwards extends Module {
     @Override
     public void onDeactivate() {
         if (mc.options == null) return;
-        KeyMapping.set(mc.options.keyUp.getKey(), false);
-        if (autoJump.get()) KeyMapping.set(mc.options.keyJump.getKey(), false);
+        mc.options.keyUp.setDown(false);
+        if (autoJump.get()) mc.options.keyJump.setDown(false);
     }
 
     @EventHandler
     private void onTick(TickEvent.Pre event) {
         if (mc.player == null || mc.options == null) return;
-        KeyMapping.set(mc.options.keyUp.getKey(), true);
+        mc.options.keyUp.setDown(true);
         if (autoJump.get()) {
-            KeyMapping.set(mc.options.keyJump.getKey(), !mc.options.keyShift.isDown());
+            mc.options.keyJump.setDown(!mc.options.keyShift.isDown());
         }
     }
 

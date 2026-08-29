@@ -247,10 +247,10 @@ public class PlayerList extends Module {
 
         Renderer2D.COLOR.begin();
         Renderer2D.COLOR.quad(x - padding, y - padding, backgroundWidth, backgroundHeight, BACKGROUND_COLOR);
-        Renderer2D.COLOR.render(null);
+        Renderer2D.COLOR.render();
 
         // Draw each player entry with Meteor's text renderer.
-        TextRenderer.get().begin(scaleValue);
+        beginTextRenderer(event);
         for (PlayerInfo entry : sortedPlayers) {
             boolean matches = similarPlayers.contains(entry) || doubleHalfPlayers.contains(entry);
             if (hideNormalPlayers.get() && !matches) continue;
@@ -274,6 +274,27 @@ public class PlayerList extends Module {
             y += lineHeight;
         }
         TextRenderer.get().end();
+    }
+
+    private void beginTextRenderer(Render2DEvent event) {
+        try {
+            Class<?> graphicsClass = Class.forName("net.minecraft.client.gui.GuiGraphicsExtractor");
+            Object graphics = null;
+
+            for (java.lang.reflect.Field field : event.getClass().getDeclaredFields()) {
+                if (graphicsClass.isAssignableFrom(field.getType())) {
+                    field.setAccessible(true);
+                    graphics = field.get(event);
+                    break;
+                }
+            }
+
+            if (graphics == null) throw new IllegalStateException("Render2DEvent does not expose GuiGraphicsExtractor");
+
+            TextRenderer.get().getClass().getMethod("begin", graphicsClass).invoke(TextRenderer.get(), graphics);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Failed to initialize Meteor text renderer", e);
+        }
     }
 
     private String formatEntry(PlayerInfo entry, int maxPingLength) {
