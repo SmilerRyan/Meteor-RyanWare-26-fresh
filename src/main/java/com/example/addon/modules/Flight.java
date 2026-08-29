@@ -311,129 +311,58 @@ public class Flight extends Module {
         return false;
     }
 
-    private void handleBoatFly() {
-        if (mc.player.getVehicle() == null) return;
+private void handleBoatFly() {
+    if (mc.player.getVehicle() == null) return;
 
-        var vehicle = mc.player.getVehicle();
+    var vehicle = mc.player.getVehicle();
 
-        if (!vehicle.getType().toString().toLowerCase().contains("boat")) {
-            return;
-        }
-
-        double speedValue = boatFlySpeed.get();
-
-        /*
-         * Prevent normal boat gravity/physics from making the boat
-         * slowly fall. Movement is controlled entirely here.
-         */
-
-        double forward = 0.0;
-
-        if (mc.options.keyUp.isDown()) {
-            forward += 1.0;
-        }
-
-        if (mc.options.keyDown.isDown()) {
-            forward -= 1.0;
-        }
-
-        float yaw = mc.player.getYRot();
-        float pitch = mc.player.getXRot();
-
-        double yawRad = Math.toRadians(yaw);
-        double pitchRad = Math.toRadians(pitch);
-
-        /*
-         * Look direction.
-         *
-         * W/S follows the direction you're looking, including
-         * looking up/down, similar to creative flight.
-         */
-        double lookX = -Math.sin(yawRad) * Math.cos(pitchRad);
-        double lookY = -Math.sin(pitchRad);
-        double lookZ = Math.cos(yawRad) * Math.cos(pitchRad);
-
-        double moveX = lookX * forward;
-        double moveY = lookY * forward;
-        double moveZ = lookZ * forward;
-
-        /*
-         * Space = go up.
-         */
-        if (mc.options.keyJump.isDown()) {
-            moveY += 1.0;
-        }
-
-        /*
-         * Shift = go down.
-         *
-         * If looking down far enough, Shift is also allowed to
-         * dismount the boat through the normal Minecraft input.
-         */
-        boolean lookingDown = pitch > 55.0f;
-
-        if (mc.options.keyShift.isDown()) {
-            moveY -= 1.0;
-        }
-
-        /*
-         * Normalize diagonal movement so combining W + Space/Shift
-         * doesn't make the boat move faster.
-         */
-        double length = Math.sqrt(
-            moveX * moveX +
-            moveY * moveY +
-            moveZ * moveZ
-        );
-
-        if (length > 1.0) {
-            moveX /= length;
-            moveY /= length;
-            moveZ /= length;
-        }
-
-        /*
-         * No input = completely stationary.
-         *
-         * This is what prevents the boat from slowly falling.
-         */
-        if (forward == 0.0
-            && !mc.options.keyJump.isDown()
-            && !mc.options.keyShift.isDown()) {
-
-            moveX = 0.0;
-            moveY = 0.0;
-            moveZ = 0.0;
-        }
-
-        vehicle.setDeltaMovement(
-            moveX * speedValue,
-            moveY * speedValue,
-            moveZ * speedValue
-        );
-
-        /*
-         * Keep the boat from applying normal gravity/drag after
-         * our velocity has been set.
-         */
-        if (!mc.options.keyJump.isDown()
-            && !mc.options.keyShift.isDown()
-            && forward == 0.0) {
-
-            vehicle.setDeltaMovement(0.0, 0.0, 0.0);
-        }
-
-        /*
-         * The actual dismount restriction is handled here by
-         * immediately forcing the player back into the vehicle if
-         * Shift is held while NOT looking down.
-         *
-         * Looking down past 55 degrees allows the normal dismount.
-         */
-        if (mc.options.keyShift.isDown() && !lookingDown) {
-            if (mc.player.getVehicle() == null) {
-                mc.player.startRiding(vehicle, true, true);
-            }
-        }
+    if (!vehicle.getType().toString().toLowerCase().contains("boat")) {
+        return;
     }
+
+    double speedValue = boatFlySpeed.get();
+
+    // W/S controls forward and backward movement.
+    double forward = 0.0;
+
+    if (mc.options.keyUp.isDown()) {
+        forward += 1.0;
+    }
+
+    if (mc.options.keyDown.isDown()) {
+        forward -= 1.0;
+    }
+
+    // Use player/boat facing direction.
+    double yaw = Math.toRadians(mc.player.getYRot());
+
+    double moveX = -Math.sin(yaw) * forward;
+    double moveZ = Math.cos(yaw) * forward;
+
+    /*
+     * Vertical movement:
+     * Space  = up
+     * Control = down
+     * Neither = hover
+     */
+    double vertical = 0.0;
+
+    if (mc.options.keyJump.isDown()) {
+        vertical = 1.0;
+    } else if (mc.options.keyShift.isDown()) {
+        vertical = -1.0;
+    }
+
+    /*
+     * Always explicitly set Y velocity.
+     * This prevents gravity from making the boat slowly fall
+     * when no vertical key is being pressed.
+     */
+    vehicle.setDeltaMovement(
+        moveX * speedValue,
+        vertical * speedValue,
+        moveZ * speedValue
+    );
+}
+
 }
