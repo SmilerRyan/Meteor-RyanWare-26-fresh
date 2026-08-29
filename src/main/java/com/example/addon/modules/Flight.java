@@ -323,53 +323,59 @@ public class Flight extends Module {
         return false;
     }
 
-    private void handleBoatFly() {
-        if (mc.player.getVehicle() == null) return;
+private void handleBoatFly() {
+    if (mc.player.getVehicle() == null) return;
 
-        var vehicle = mc.player.getVehicle();
+    var vehicle = mc.player.getVehicle();
 
-        if (!vehicle.getType().toString().toLowerCase().contains("boat")) {
-            return;
-        }
-
-        double speedValue = boatFlySpeed.get();
-
-        var look = mc.player.getLookAngle();
-
-        /*
-         * Horizontal movement follows where the player is looking.
-         * Vertical movement is controlled independently with jump/sneak.
-         */
-        double horizontalX = look.x;
-        double horizontalZ = look.z;
-
-        double horizontalLength = Math.sqrt(
-            horizontalX * horizontalX +
-            horizontalZ * horizontalZ
-        );
-
-        if (horizontalLength > 0.0001) {
-            horizontalX /= horizontalLength;
-            horizontalZ /= horizontalLength;
-        } else {
-            horizontalX = 0.0;
-            horizontalZ = 0.0;
-        }
-
-        double vertical = 0.0;
-
-        if (mc.options.keyJump.isDown()) {
-            vertical = speedValue;
-        } else if (mc.options.keyShift.isDown()) {
-            vertical = -speedValue;
-        }
-
-        double horizontalSpeed = speedValue;
-
-        vehicle.setDeltaMovement(
-            horizontalX * horizontalSpeed,
-            vertical,
-            horizontalZ * horizontalSpeed
-        );
+    if (!vehicle.getType().toString().toLowerCase().contains("boat")) {
+        return;
     }
+
+    double speedValue = boatFlySpeed.get();
+
+    // Use the player's movement input instead of automatically
+    // moving in the direction they are looking.
+    float forward = mc.player.input.forwardImpulse;
+    float sideways = mc.player.input.leftImpulse;
+
+    double yaw = Math.toRadians(mc.player.getYRot());
+
+    // Forward/backward movement.
+    double forwardX = -Math.sin(yaw) * forward;
+    double forwardZ = Math.cos(yaw) * forward;
+
+    // Left/right movement.
+    double sideX = Math.cos(yaw) * sideways;
+    double sideZ = Math.sin(yaw) * sideways;
+
+    double moveX = forwardX + sideX;
+    double moveZ = forwardZ + sideZ;
+
+    // Prevent diagonal movement from being faster.
+    double length = Math.sqrt(moveX * moveX + moveZ * moveZ);
+
+    if (length > 1.0) {
+        moveX /= length;
+        moveZ /= length;
+    }
+
+    double vertical = 0.0;
+
+    // Jump = up.
+    if (mc.options.keyJump.isDown()) {
+        vertical = speedValue;
+    }
+
+    // Sneak = down.
+    if (mc.options.keyShift.isDown()) {
+        vertical = -speedValue;
+    }
+
+    vehicle.setDeltaMovement(
+        moveX * speedValue,
+        vertical,
+        moveZ * speedValue
+    );
+}
 }
