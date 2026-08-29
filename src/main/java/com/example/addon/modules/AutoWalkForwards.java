@@ -27,16 +27,16 @@ public class AutoWalkForwards extends Module {
     @Override
     public void onDeactivate() {
         if (mc.options == null) return;
-        mc.options.keyUp.setPressed(false);
-        if (autoJump.get()) mc.options.keyJump.setPressed(false);
+        mc.options.keyUp.set(false);
+        if (autoJump.get()) mc.options.keyJump.set(false);
     }
 
     @EventHandler
     private void onTick(TickEvent.Pre event) {
         if (mc.player == null || mc.options == null) return;
-        mc.options.keyUp.setPressed(true);
+        mc.options.keyUp.set(true);
         if (autoJump.get()) {
-            mc.options.keyJump.setPressed(!mc.options.keyShift.isPressed());
+            mc.options.keyJump.set(!mc.options.keyShift.isDown());
         }
     }
 

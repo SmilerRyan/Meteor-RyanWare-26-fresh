@@ -238,66 +238,38 @@ public class PlayerList extends Module {
         }
         if (visiblePlayers == 0) return;
 
-        // Draw background
-        double padding = 5;
-        double backgroundWidth = maxWidth + (padding * 2);
-        double backgroundHeight = (visiblePlayers * lineHeight) + (padding * 2);
-
-        event.drawContext.fill(
-            (int)(x - padding), 
-            (int)(y - padding), 
-            (int)(x - padding + backgroundWidth), 
-            (int)(y - padding + backgroundHeight),
-            BACKGROUND_COLOR.getPacked()
+        // Draw background using Meteor's 2D renderer.
+        event.renderer.quad(
+            x - padding,
+            y - padding,
+            backgroundWidth,
+            backgroundHeight,
+            BACKGROUND_COLOR
         );
-        
-        // Draw each player entry
+
+        // Draw each player entry. Renderer2D text is already screen-space;
+        // apply the configured scale to coordinates and text size by using
+        // the scaled positions and keeping line spacing consistent.
         for (PlayerInfo entry : sortedPlayers) {
             boolean matches = similarPlayers.contains(entry) || doubleHalfPlayers.contains(entry);
             if (hideNormalPlayers.get() && !matches) continue;
-            
+
             String line = formatEntry(entry, maxPingLength);
-            
-            int colorToUse = textColor.get().getPacked();
+            Color colorToUse = textColor.get();
 
             switch (highlightPriority.get()) {
                 case SimilarPingFirst:
-                    if (similarPlayers.contains(entry)) {
-                        colorToUse = similarPingColor.get().getPacked();
-                    } else if (doubleHalfPlayers.contains(entry)) {
-                        colorToUse = doubleHalfColor.get().getPacked();
-                    }
+                    if (similarPlayers.contains(entry)) colorToUse = similarPingColor.get();
+                    else if (doubleHalfPlayers.contains(entry)) colorToUse = doubleHalfColor.get();
                     break;
-
                 case DoubleHalfFirst:
                 default:
-                    if (doubleHalfPlayers.contains(entry)) {
-                        colorToUse = doubleHalfColor.get().getPacked();
-                    } else if (similarPlayers.contains(entry)) {
-                        colorToUse = similarPingColor.get().getPacked();
-                    }
+                    if (doubleHalfPlayers.contains(entry)) colorToUse = doubleHalfColor.get();
+                    else if (similarPlayers.contains(entry)) colorToUse = similarPingColor.get();
                     break;
             }
-            
-            // Push matrices using JOML's updated 2D Matrix API
-            event.drawContext.pose().pushPose();
-            
-            // Use 2D scaling
-            event.drawContext.pose().scale((float) scaleValue, (float) scaleValue);
-            
-            // Draw text
-            event.drawContext.drawText(
-                mc.font,
-                line,
-                (int) (x / scaleValue),
-                (int) (y / scaleValue),
-                colorToUse,
-                true
-            );
-            
-            // Pop the matrix
-            event.drawContext.pose().popPose();
-            
+
+            event.renderer.text(line, x, y, colorToUse, true, scaleValue);
             y += lineHeight;
         }
     }

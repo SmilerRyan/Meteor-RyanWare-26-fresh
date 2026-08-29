@@ -37,7 +37,7 @@ public class HideItemFrameMaps extends Module {
         if (!(event.entity instanceof ItemFrame frame)) return;
 
         // SHIFT = normal vanilla behavior (do nothing)
-        if (mc.player.isSneaking()) return;
+        if (mc.player.isShiftKeyDown()) return;
 
         ItemStack stack = frame.getItem();
         Integer id = extractMapId(stack);
@@ -55,7 +55,7 @@ public class HideItemFrameMaps extends Module {
     @EventHandler
     private void onTick(TickEvent.Pre event) {
         if (mc.level == null || mc.player == null) return;
-        mc.level.getEntitiesOfClass(ItemFrame.class, mc.player.getBoundingBox().expand(64), e -> true)
+        mc.level.getEntitiesOfClass(ItemFrame.class, mc.player.getBoundingBox().inflate(64), e -> true)
             .forEach(this::updateFrame);
     }
 
@@ -67,7 +67,7 @@ public class HideItemFrameMaps extends Module {
         if (stack.getItem() == Items.FILLED_MAP) {
             if (allowed.contains(id)) return;
 
-            ItemStack barrier = Items.BARRIER.getDefaultStack();
+            ItemStack barrier = new ItemStack(Items.BARRIER);
             barrier.set(DataComponents.CUSTOM_NAME, Component.literal("§4" + id));
             frame.setItem(barrier);
         }
@@ -75,7 +75,7 @@ public class HideItemFrameMaps extends Module {
         if (stack.getItem() == Items.BARRIER) {
             if (!allowed.contains(id)) return;
 
-            ItemStack map = Items.FILLED_MAP.getDefaultStack();
+            ItemStack map = new ItemStack(Items.FILLED_MAP);
             map.set(DataComponents.MAP_ID, new MapId(id));
             frame.setItem(map);
         }

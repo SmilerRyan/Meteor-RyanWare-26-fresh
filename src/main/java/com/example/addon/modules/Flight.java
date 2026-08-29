@@ -133,11 +133,11 @@ public class Flight extends Module {
     private void onTick(TickEvent.Pre event) {
         if (mc.player == null) return;
 
-        boolean isJumping = mc.options.keyJump.isPressed();
+        boolean isJumping = mc.options.keyJump.isDown();
 
         // Instant takeoff mode
         if (instantTakeoff.get()) {
-            if (!isFlying && isJumping && !mc.player.isOnGround()) {
+            if (!isFlying && isJumping && !mc.player.onGround()) {
                 isFlying = true;
                 mc.player.getAbilities().mayfly = true;
                 mc.player.getAbilities().flying = true;
@@ -160,7 +160,7 @@ public class Flight extends Module {
         if (jumpTimer > 0) jumpTimer--;
 
         // Reset on ground (vanilla behavior feel)
-        if (mc.player.isOnGround() && isFlying && instantTakeoff.get()) {
+        if (mc.player.onGround() && isFlying && instantTakeoff.get()) {
             isFlying = false;
             mc.player.getAbilities().mayfly = false;
             mc.player.getAbilities().flying = false;
@@ -178,18 +178,18 @@ public class Flight extends Module {
         }
 
         // Bypass Vanilla Anti-kick
-        if (isFlying && !mc.player.isOnGround() && bypassAntiKick.get() && mc.player.tickCount % 10 < 2) {
+        if (isFlying && !mc.player.onGround() && bypassAntiKick.get() && mc.player.tickCount % 10 < 2) {
             mc.player.setVelocity(
-                mc.player.getVelocity().x,
-                mc.player.getVelocity().y + (mc.player.tickCount % 10 == 0 ? -0.04 : 0.04),
-                mc.player.getVelocity().z
+                mc.player.getDeltaMovement().x,
+                mc.player.getDeltaMovement().y + (mc.player.tickCount % 10 == 0 ? -0.04 : 0.04),
+                mc.player.getDeltaMovement().z
             );
         }
 
         // Anti-slowdown
         if (antiSlowdown.get() && isFlying) {
             if (slowdownActive > 0) {
-                // mc.player.setVelocity(0, mc.player.getVelocity().y, 0);
+                // mc.player.setVelocity(0, mc.player.getDeltaMovement().y, 0);
                 mc.player.getAbilities().setFlyingSpeed((float) (slowdownSpeed.get() * 0.05f));
                 slowdownActive--;
             } else {

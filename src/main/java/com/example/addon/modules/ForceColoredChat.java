@@ -25,7 +25,7 @@ public class ForceColoredChat extends Module {
         }
     }
 
-    private Component replaceColorCodes(Text text) {
+    private Component replaceColorCodes(Component text) {
         MutableComponent result = Component.empty().setStyle(text.getStyle());
         text.visit((style, string) -> {
             String replaced = colorCodePattern.matcher(string).replaceAll("§$1");

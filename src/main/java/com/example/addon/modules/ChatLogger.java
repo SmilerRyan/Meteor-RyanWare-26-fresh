@@ -85,7 +85,7 @@ public class ChatLogger extends Module {
 
         String server = "singleplayer";
         if (mc.getCurrentServer() != null) {
-            server = mc.getCurrentServer().address;
+            server = mc.getCurrentServer().ip;
         }
 
         String date = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
@@ -100,7 +100,7 @@ public class ChatLogger extends Module {
         if (new File(path).isAbsolute()) {
             logFile = new File(path);
         } else {
-            logFile = new File(mc.runDirectory, path);
+            logFile = new File(mc.gameDirectory, path);
         }
     }
 

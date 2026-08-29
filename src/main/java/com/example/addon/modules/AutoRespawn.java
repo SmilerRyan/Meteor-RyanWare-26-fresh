@@ -47,9 +47,8 @@ public class AutoRespawn extends Module {
             waitingForCommands = false;
             return;
         }
-        if (mc.screen instanceof DeathScreen) {
+        if (mc.getScreen() instanceof DeathScreen) {
             mc.player.respawn();
-            mc.setScreen(null);
             waitingForCommands = true;
             commandQueue.clear();
             commandQueue.addAll(commands.get());
