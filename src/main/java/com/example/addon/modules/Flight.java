@@ -6,6 +6,7 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.client.Minecraft;
 import com.mojang.blaze3d.platform.InputConstants;
+import org.lwjgl.glfw.GLFW;
 import com.example.addon.AddonTemplate;
 
 public class Flight extends Module {
@@ -314,6 +315,10 @@ public class Flight extends Module {
     
 
 
+
+
+
+
 private void handleBoatFly() {
     if (mc.player.getVehicle() == null) return;
 
@@ -325,7 +330,6 @@ private void handleBoatFly() {
 
     double speedValue = boatFlySpeed.get();
 
-    // W/S controls forward and backward movement.
     double forward = 0.0;
 
     if (mc.options.keyUp.isDown()) {
@@ -336,29 +340,20 @@ private void handleBoatFly() {
         forward -= 1.0;
     }
 
-    // Use player/boat facing direction.
     double yaw = Math.toRadians(mc.player.getYRot());
 
     double moveX = -Math.sin(yaw) * forward;
     double moveZ = Math.cos(yaw) * forward;
 
-    /*
-     * Vertical movement:
-     * Space = up
-     * Left/Right Control = down
-     * Neither = hover
-     */
-    boolean leftControl = InputConstants.isKeyDown(
-        mc.getWindow().getWindow(),
-        InputConstants.KEY_LCONTROL
-    );
+    // Check physical Control keys directly.
+    long windowHandle = mc.getWindow().getWindow();
 
-    boolean rightControl = InputConstants.isKeyDown(
-        mc.getWindow().getWindow(),
-        InputConstants.KEY_RCONTROL
-    );
-
-    boolean controlDown = leftControl || rightControl;
+    boolean controlDown =
+        GLFW.glfwGetKey(windowHandle, GLFW.GLFW_KEY_LEFT_CONTROL)
+            == GLFW.GLFW_PRESS
+        ||
+        GLFW.glfwGetKey(windowHandle, GLFW.GLFW_KEY_RIGHT_CONTROL)
+            == GLFW.GLFW_PRESS;
 
     double vertical = 0.0;
 
@@ -368,12 +363,12 @@ private void handleBoatFly() {
         vertical = -1.0;
     }
 
-    // Explicitly set Y velocity so gravity cannot make the boat fall.
     vehicle.setDeltaMovement(
         moveX * speedValue,
         vertical * speedValue,
         moveZ * speedValue
     );
 }
+
 
 }
