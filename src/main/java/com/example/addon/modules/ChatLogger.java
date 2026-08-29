@@ -12,6 +12,9 @@ import meteordevelopment.orbit.EventHandler;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ServerboundChatCommandPacket;
+import net.minecraft.network.protocol.game.ServerboundChatCommandSignedPacket;
 
 import com.example.addon.AddonTemplate;
 
@@ -71,6 +74,19 @@ public class ChatLogger extends Module {
         if (event.message == null) return;
 
         log("[O] " + event.message);
+    }
+
+    @EventHandler
+    private void onSendPacket(PacketEvent.Send event) {
+        Packet<?> packet = event.packet;
+
+        if (packet instanceof ServerboundChatCommandPacket cmd) {
+            log("[O] /" + cmd.command());
+        }
+
+        if (packet instanceof ServerboundChatCommandSignedPacket signed) {
+            log("[O] /" + signed.command());
+        }
     }
 
     private void ensureSession() {
