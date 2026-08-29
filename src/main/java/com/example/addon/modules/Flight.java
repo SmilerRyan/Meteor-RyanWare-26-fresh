@@ -322,7 +322,8 @@ public class Flight extends Module {
         return false;
     }
         
-    private void handleBoatFly() {
+        
+        private void handleBoatFly() {
     if (mc.player.getVehicle() == null) return;
 
     var vehicle = mc.player.getVehicle();
@@ -358,12 +359,17 @@ public class Flight extends Module {
     /*
      * Vertical movement:
      *
-     * Space = up
-     * Control = down
+     * Space = full speed up
+     * Control = full speed down
      *
-     * If Look Vertical is enabled:
-     * Looking almost directly up = up
-     * Looking almost directly down = down
+     * Look Vertical:
+     * Slightly up = slowly rises
+     * Farther up = rises faster
+     * Directly up = full speed up
+     *
+     * Slightly down = slowly descends
+     * Farther down = descends faster
+     * Directly down = full speed down
      */
     double vertical = 0.0;
 
@@ -374,20 +380,31 @@ public class Flight extends Module {
     } else if (boatLookVertical.get()) {
         float pitch = mc.player.getXRot();
 
-        // Minecraft pitch:
-        // -90 = looking directly up
-        // +90 = looking directly down
+        /*
+         * Minecraft pitch:
+         * -90 = directly up
+         *   0 = straight ahead
+         * +90 = directly down
+         *
+         * Ignore the first 5 degrees around horizontal
+         * so tiny mouse movements don't cause vertical movement.
+         */
+        double deadzone = 10.0;
 
-        if (pitch <= -80.0f) {
-            vertical = 1.0;
-        } else if (pitch >= 80.0f) {
-            vertical = -1.0;
+        if (pitch < -deadzone) {
+            // Convert -5..-90 into 0..1.
+            vertical = (pitch + deadzone) / (-90.0 + deadzone);
+
+        } else if (pitch > deadzone) {
+            // Convert 5..90 into 0..-1.
+            vertical = -(pitch - deadzone) / (90.0 - deadzone);
         }
     }
 
     /*
      * Explicitly control all velocity.
-     * Y remains zero unless vertical movement is requested.
+     * Y is proportional to looking angle when
+     * Look Vertical is enabled.
      */
     vehicle.setDeltaMovement(
         moveX * speedValue,
