@@ -310,8 +310,10 @@ public class Flight extends Module {
 
         return false;
     }
+    
 
-private void handleBoatFly() {
+
+    private void handleBoatFly() {
     if (mc.player.getVehicle() == null) return;
 
     var vehicle = mc.player.getVehicle();
@@ -341,23 +343,33 @@ private void handleBoatFly() {
 
     /*
      * Vertical movement:
-     * Space  = up
-     * Control = down
+     * Space = up
+     * Left/Right Control = down
      * Neither = hover
+     *
+     * GLFW checks the actual Control key directly,
+     * regardless of Minecraft's key bindings.
      */
+    boolean controlDown =
+        org.lwjgl.glfw.GLFW.glfwGetKey(
+            mc.getWindow().getWindow(),
+            org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_CONTROL
+        ) == org.lwjgl.glfw.GLFW.GLFW_PRESS
+        ||
+        org.lwjgl.glfw.GLFW.glfwGetKey(
+            mc.getWindow().getWindow(),
+            org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_CONTROL
+        ) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
+
     double vertical = 0.0;
 
     if (mc.options.keyJump.isDown()) {
         vertical = 1.0;
-    } else if (mc.options.keyShift.isDown()) {
+    } else if (controlDown) {
         vertical = -1.0;
     }
 
-    /*
-     * Always explicitly set Y velocity.
-     * This prevents gravity from making the boat slowly fall
-     * when no vertical key is being pressed.
-     */
+    // Explicitly set Y velocity so gravity cannot make the boat fall.
     vehicle.setDeltaMovement(
         moveX * speedValue,
         vertical * speedValue,
