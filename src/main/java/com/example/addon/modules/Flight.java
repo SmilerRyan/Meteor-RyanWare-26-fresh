@@ -5,6 +5,7 @@ import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.client.Minecraft;
+import com.mojang.blaze3d.platform.InputConstants;
 import com.example.addon.AddonTemplate;
 
 public class Flight extends Module {
@@ -313,7 +314,7 @@ public class Flight extends Module {
     
 
 
-    private void handleBoatFly() {
+private void handleBoatFly() {
     if (mc.player.getVehicle() == null) return;
 
     var vehicle = mc.player.getVehicle();
@@ -346,20 +347,18 @@ public class Flight extends Module {
      * Space = up
      * Left/Right Control = down
      * Neither = hover
-     *
-     * GLFW checks the actual Control key directly,
-     * regardless of Minecraft's key bindings.
      */
-    boolean controlDown =
-        org.lwjgl.glfw.GLFW.glfwGetKey(
-            mc.getWindow().getWindow(),
-            org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_CONTROL
-        ) == org.lwjgl.glfw.GLFW.GLFW_PRESS
-        ||
-        org.lwjgl.glfw.GLFW.glfwGetKey(
-            mc.getWindow().getWindow(),
-            org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_CONTROL
-        ) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
+    boolean leftControl = InputConstants.isKeyDown(
+        mc.getWindow().getWindow(),
+        InputConstants.KEY_LCONTROL
+    );
+
+    boolean rightControl = InputConstants.isKeyDown(
+        mc.getWindow().getWindow(),
+        InputConstants.KEY_RCONTROL
+    );
+
+    boolean controlDown = leftControl || rightControl;
 
     double vertical = 0.0;
 
