@@ -334,47 +334,38 @@ private void handleBoatFly() {
 
     double speedValue = boatFlySpeed.get();
 
-    // Use the player's movement input instead of automatically
-    // moving in the direction they are looking.
-    float forward = mc.player.input.forwardImpulse;
-    float sideways = mc.player.input.leftImpulse;
+    // W/S controls forward and backward movement.
+    double forward = 0.0;
 
+    if (mc.options.keyUp.isDown()) {
+        forward += 1.0;
+    }
+
+    if (mc.options.keyDown.isDown()) {
+        forward -= 1.0;
+    }
+
+    // Use player/boat facing direction.
     double yaw = Math.toRadians(mc.player.getYRot());
 
-    // Forward/backward movement.
-    double forwardX = -Math.sin(yaw) * forward;
-    double forwardZ = Math.cos(yaw) * forward;
+    double moveX = -Math.sin(yaw) * forward;
+    double moveZ = Math.cos(yaw) * forward;
 
-    // Left/right movement.
-    double sideX = Math.cos(yaw) * sideways;
-    double sideZ = Math.sin(yaw) * sideways;
-
-    double moveX = forwardX + sideX;
-    double moveZ = forwardZ + sideZ;
-
-    // Prevent diagonal movement from being faster.
-    double length = Math.sqrt(moveX * moveX + moveZ * moveZ);
-
-    if (length > 1.0) {
-        moveX /= length;
-        moveZ /= length;
-    }
-
+    // Space = up.
     double vertical = 0.0;
 
-    // Jump = up.
     if (mc.options.keyJump.isDown()) {
-        vertical = speedValue;
+        vertical += 1.0;
     }
 
-    // Sneak = down.
+    // Sneak key, normally Left Control = down.
     if (mc.options.keyShift.isDown()) {
-        vertical = -speedValue;
+        vertical -= 1.0;
     }
 
     vehicle.setDeltaMovement(
         moveX * speedValue,
-        vertical,
+        vertical * speedValue,
         moveZ * speedValue
     );
 }
