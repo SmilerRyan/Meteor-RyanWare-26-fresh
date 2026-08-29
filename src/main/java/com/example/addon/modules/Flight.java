@@ -1,12 +1,16 @@
 package com.example.addon.modules;
 
+import com.example.addon.AddonTemplate;
+import com.mojang.blaze3d.platform.InputConstants;
+
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
+
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyMappingHelper;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import org.lwjgl.glfw.GLFW;
-import com.example.addon.AddonTemplate;
 
 public class Flight extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
@@ -128,6 +132,20 @@ public class Flight extends Module {
         .build()
     );
 
+    /*
+     * Dedicated Boat Fly down key.
+     *
+     * Hard-bound to Left Control.
+     * This does not use Minecraft's Shift binding, so Shift
+     * remains available for leaving the boat.
+     */
+    private final KeyMapping boatFlyDownKey = new KeyMapping(
+        "key.ryanware.boat_fly_down",
+        InputConstants.Type.KEYSYM,
+        InputConstants.KEY_LCONTROL,
+        "key.categories.ryanware"
+    );
+
     private final Minecraft mc = Minecraft.getInstance();
 
     private boolean wasJumping = false;
@@ -145,6 +163,11 @@ public class Flight extends Module {
             "RyanWare-Flight",
             "Toggle flying with double jump, like creative mode."
         );
+
+        /*
+         * Register the dedicated Control key.
+         */
+        KeyMappingHelper.registerKeyMapping(boatFlyDownKey);
     }
 
     @Override
@@ -233,6 +256,7 @@ public class Flight extends Module {
                 double maxSpeed = elytraSlowdownSpeed.get();
 
                 var velocity = mc.player.getDeltaMovement();
+
                 double horizontalSpeed = Math.sqrt(
                     velocity.x * velocity.x +
                     velocity.z * velocity.z
@@ -311,82 +335,63 @@ public class Flight extends Module {
 
         return false;
     }
-    
 
+    private void handleBoatFly() {
+        if (mc.player.getVehicle() == null) return;
 
+        var vehicle = mc.player.getVehicle();
 
+        if (!vehicle.getType().toString().toLowerCase().contains("boat")) {
+            return;
+        }
 
+        double speedValue = boatFlySpeed.get();
 
+        // W/S controls forward and backward movement.
+        double forward = 0.0;
 
+        if (mc.options.keyUp.isDown()) {
+            forward += 1.0;
+        }
 
+        if (mc.options.keyDown.isDown()) {
+            forward -= 1.0;
+        }
 
+        // Use player/boat facing direction.
+        double yaw = Math.toRadians(mc.player.getYRot());
 
+        double moveX = -Math.sin(yaw) * forward;
+        double moveZ = Math.cos(yaw) * forward;
 
+        /*
+         * Vertical movement:
+         *
+         * Space  = up
+         * Control = down
+         * Neither = hover
+         *
+         * boatFlyDownKey is specifically bound to Left Control,
+         * so the Minecraft Shift binding is never used.
+         */
+        double vertical = 0.0;
 
+        if (mc.options.keyJump.isDown()) {
+            vertical = 1.0;
+        } else if (boatFlyDownKey.isDown()) {
+            vertical = -1.0;
+        }
 
-
-
-private void handleBoatFly() {
-    if (mc.player.getVehicle() == null) return;
-
-    var vehicle = mc.player.getVehicle();
-
-    if (!vehicle.getType().toString().toLowerCase().contains("boat")) {
-        return;
+        /*
+         * Explicitly set Y velocity every tick.
+         *
+         * This prevents gravity from making the boat slowly fall
+         * when neither Space nor Control is pressed.
+         */
+        vehicle.setDeltaMovement(
+            moveX * speedValue,
+            vertical * speedValue,
+            moveZ * speedValue
+        );
     }
-
-    double speedValue = boatFlySpeed.get();
-
-    // W/S controls forward and backward movement.
-    double forward = 0.0;
-
-    if (mc.options.keyUp.isDown()) {
-        forward += 1.0;
-    }
-
-    if (mc.options.keyDown.isDown()) {
-        forward -= 1.0;
-    }
-
-    // Use player/boat facing direction.
-    double yaw = Math.toRadians(mc.player.getYRot());
-
-    double moveX = -Math.sin(yaw) * forward;
-    double moveZ = Math.cos(yaw) * forward;
-
-    /*
-     * Physical Control key.
-     *
-     * Minecraft 26.2 KeyboardHandler exposes the GLFW window
-     * handle through getWindow().
-     */
-    long window = mc.keyboardHandler.getWindow();
-
-    boolean controlDown =
-        GLFW.glfwGetKey(window, GLFW.GLFW_KEY_LEFT_CONTROL) == GLFW.GLFW_PRESS
-        || GLFW.glfwGetKey(window, GLFW.GLFW_KEY_RIGHT_CONTROL) == GLFW.GLFW_PRESS;
-
-    /*
-     * Space = up
-     * Control = down
-     * Neither = hover
-     */
-    double vertical = 0.0;
-
-    if (mc.options.keyJump.isDown()) {
-        vertical = 1.0;
-    } else if (controlDown) {
-        vertical = -1.0;
-    }
-
-    // Explicit Y velocity prevents gravity from pulling the boat down.
-    vehicle.setDeltaMovement(
-        moveX * speedValue,
-        vertical * speedValue,
-        moveZ * speedValue
-    );
-}
-
-
-
 }
