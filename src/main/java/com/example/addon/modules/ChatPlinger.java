@@ -26,7 +26,7 @@ public class ChatPlinger extends Module {
         new SoundEventListSetting.Builder()
             .name("sound")
             .description("Sound to play.")
-            .defaultValue(SoundEvents.NOTE_BLOCK_PLING)
+            .defaultValue(SoundEvents.NOTE_BLOCK_PLING.value())
             .build()
     );
 

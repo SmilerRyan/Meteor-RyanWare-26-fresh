@@ -1,6 +1,8 @@
 package com.example.addon.modules;
 
 import meteordevelopment.meteorclient.events.render.Render2DEvent;
+import meteordevelopment.meteorclient.renderer.Renderer2D;
+import meteordevelopment.meteorclient.renderer.text.TextRenderer;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.settings.*;
@@ -238,18 +240,17 @@ public class PlayerList extends Module {
         }
         if (visiblePlayers == 0) return;
 
-        // Draw background using Meteor's 2D renderer.
-        event.renderer.quad(
-            x - padding,
-            y - padding,
-            backgroundWidth,
-            backgroundHeight,
-            BACKGROUND_COLOR
-        );
+        // Draw background using Meteor's static 2D renderer.
+        double padding = 2;
+        double backgroundWidth = maxWidth + padding * 2;
+        double backgroundHeight = Math.max(lineHeight * visiblePlayers, lineHeight) + padding * 2;
 
-        // Draw each player entry. Renderer2D text is already screen-space;
-        // apply the configured scale to coordinates and text size by using
-        // the scaled positions and keeping line spacing consistent.
+        Renderer2D.COLOR.begin();
+        Renderer2D.COLOR.quad(x - padding, y - padding, backgroundWidth, backgroundHeight, BACKGROUND_COLOR);
+        Renderer2D.COLOR.render(null);
+
+        // Draw each player entry with Meteor's text renderer.
+        TextRenderer.get().begin(scaleValue);
         for (PlayerInfo entry : sortedPlayers) {
             boolean matches = similarPlayers.contains(entry) || doubleHalfPlayers.contains(entry);
             if (hideNormalPlayers.get() && !matches) continue;
@@ -269,9 +270,10 @@ public class PlayerList extends Module {
                     break;
             }
 
-            event.renderer.text(line, x, y, colorToUse, true, scaleValue);
+            TextRenderer.get().render(line, x, y, colorToUse, true);
             y += lineHeight;
         }
+        TextRenderer.get().end();
     }
 
     private String formatEntry(PlayerInfo entry, int maxPingLength) {

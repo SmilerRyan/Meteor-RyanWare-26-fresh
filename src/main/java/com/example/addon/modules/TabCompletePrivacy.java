@@ -56,7 +56,7 @@ public class TabCompletePrivacy extends Module {
     private void onSend(PacketEvent.Send event) {
         if (!(event.packet instanceof ServerboundCommandSuggestionPacket packet)) return;
 
-        String command = packet.command();
+        String command = packet.getCommand();
         String lower = command.toLowerCase();
 
         // Block all

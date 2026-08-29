@@ -179,7 +179,7 @@ public class Flight extends Module {
 
         // Bypass Vanilla Anti-kick
         if (isFlying && !mc.player.onGround() && bypassAntiKick.get() && mc.player.tickCount % 10 < 2) {
-            mc.player.setVelocity(
+            mc.player.setDeltaMovement(
                 mc.player.getDeltaMovement().x,
                 mc.player.getDeltaMovement().y + (mc.player.tickCount % 10 == 0 ? -0.04 : 0.04),
                 mc.player.getDeltaMovement().z
@@ -189,7 +189,7 @@ public class Flight extends Module {
         // Anti-slowdown
         if (antiSlowdown.get() && isFlying) {
             if (slowdownActive > 0) {
-                // mc.player.setVelocity(0, mc.player.getDeltaMovement().y, 0);
+                // mc.player.setDeltaMovement(0, mc.player.getDeltaMovement().y, 0);
                 mc.player.getAbilities().setFlyingSpeed((float) (slowdownSpeed.get() * 0.05f));
                 slowdownActive--;
             } else {
