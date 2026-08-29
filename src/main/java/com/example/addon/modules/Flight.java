@@ -326,7 +326,6 @@ public class Flight extends Module {
 
 
 
-
 private void handleBoatFly() {
     if (mc.player.getVehicle() == null) return;
 
@@ -355,16 +354,23 @@ private void handleBoatFly() {
     double moveX = -Math.sin(yaw) * forward;
     double moveZ = Math.cos(yaw) * forward;
 
-    // Physical Control key, independent of Minecraft key bindings.
-    long windowHandle = mc.getWindow().getWindowHandle();
+    /*
+     * Physical Control key.
+     *
+     * Minecraft 26.2 KeyboardHandler exposes the GLFW window
+     * handle through getWindow().
+     */
+    long window = mc.keyboardHandler.getWindow();
 
     boolean controlDown =
-        GLFW.glfwGetKey(windowHandle, GLFW.GLFW_KEY_LEFT_CONTROL)
-            == GLFW.GLFW_PRESS
-        || GLFW.glfwGetKey(windowHandle, GLFW.GLFW_KEY_RIGHT_CONTROL)
-            == GLFW.GLFW_PRESS;
+        GLFW.glfwGetKey(window, GLFW.GLFW_KEY_LEFT_CONTROL) == GLFW.GLFW_PRESS
+        || GLFW.glfwGetKey(window, GLFW.GLFW_KEY_RIGHT_CONTROL) == GLFW.GLFW_PRESS;
 
-    // Space = up, Control = down, neither = hover.
+    /*
+     * Space = up
+     * Control = down
+     * Neither = hover
+     */
     double vertical = 0.0;
 
     if (mc.options.keyJump.isDown()) {
@@ -373,16 +379,13 @@ private void handleBoatFly() {
         vertical = -1.0;
     }
 
-    // Explicitly set Y velocity to zero when neither key is pressed.
-    // This prevents the boat from falling due to gravity.
+    // Explicit Y velocity prevents gravity from pulling the boat down.
     vehicle.setDeltaMovement(
         moveX * speedValue,
         vertical * speedValue,
         moveZ * speedValue
     );
 }
-
-
 
 
 
