@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 
 public class AddonTemplate extends MeteorAddon {
     public static final Logger LOG = LogUtils.getLogger();
-    public static final Category CATEGORY = new Category("Example");
+    public static final Category CATEGORY = new Category("RyanWare");
 
     @Override
     public void onInitialize() {    

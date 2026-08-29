@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "id": "addon-template",
   "version": "${version}",
-  "name": "Addon Template",
-  "description": "An addon template for Meteor Client addons.",
+  "name": "Meteor Client (RyanWare Addon)",
+  "description": "A Meteor Client addon by Ryan.",
   "authors": [
     "seasnail"
   ],
