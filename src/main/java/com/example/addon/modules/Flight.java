@@ -130,6 +130,13 @@ public class Flight extends Module {
         .build()
     );
 
+    private final Setting<Boolean> boatLookVertical = sgBoat.add(new BoolSetting.Builder()
+        .name("one-handed-mode")
+        .description("Looking almost directly up or down with controls up/down for you.")
+        .defaultValue(false)
+        .build()
+    );
+
     private final Minecraft mc = Minecraft.getInstance();
 
     private boolean wasJumping = false;
@@ -315,7 +322,7 @@ public class Flight extends Module {
         return false;
     }
         
-        private void handleBoatFly() {
+    private void handleBoatFly() {
     if (mc.player.getVehicle() == null) return;
 
     var vehicle = mc.player.getVehicle();
@@ -328,8 +335,6 @@ public class Flight extends Module {
 
     /*
      * Instantly rotate the boat to match the player's yaw.
-     * Only change Y rotation to avoid interfering with
-     * passenger/render rotation handling.
      */
     vehicle.setYRot(mc.player.getYRot());
 
@@ -351,9 +356,14 @@ public class Flight extends Module {
     double moveZ = Math.cos(yaw) * forward;
 
     /*
-     * Space = up.
-     * Control = down.
-     * Neither = exactly zero vertical velocity.
+     * Vertical movement:
+     *
+     * Space = up
+     * Control = down
+     *
+     * If Look Vertical is enabled:
+     * Looking almost directly up = up
+     * Looking almost directly down = down
      */
     double vertical = 0.0;
 
@@ -361,11 +371,23 @@ public class Flight extends Module {
         vertical = 1.0;
     } else if (isControlDown()) {
         vertical = -1.0;
+    } else if (boatLookVertical.get()) {
+        float pitch = mc.player.getXRot();
+
+        // Minecraft pitch:
+        // -90 = looking directly up
+        // +90 = looking directly down
+
+        if (pitch <= -80.0f) {
+            vertical = 1.0;
+        } else if (pitch >= 80.0f) {
+            vertical = -1.0;
+        }
     }
 
     /*
      * Explicitly control all velocity.
-     * No gravity override is used here.
+     * Y remains zero unless vertical movement is requested.
      */
     vehicle.setDeltaMovement(
         moveX * speedValue,
