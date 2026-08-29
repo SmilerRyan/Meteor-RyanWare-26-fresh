@@ -314,7 +314,7 @@ public class Flight extends Module {
 
         return false;
     }
-
+        
     private void handleBoatFly() {
         if (mc.player.getVehicle() == null) return;
 
@@ -325,6 +325,11 @@ public class Flight extends Module {
         }
 
         double speedValue = boatFlySpeed.get();
+
+        // Instantly sync boat rotation to player's rotation.
+        vehicle.setYRot(mc.player.getYRot());
+        vehicle.setXRot(0.0f);
+        vehicle.setYHeadRot(mc.player.getYRot());
 
         // W/S controls forward and backward movement.
         double forward = 0.0;
@@ -337,7 +342,7 @@ public class Flight extends Module {
             forward -= 1.0;
         }
 
-        // Use player/boat facing direction.
+        // Use the current player/boat yaw.
         double yaw = Math.toRadians(mc.player.getYRot());
 
         double moveX = -Math.sin(yaw) * forward;
@@ -357,17 +362,19 @@ public class Flight extends Module {
         }
 
         /*
-         * Explicitly set Y velocity to zero when neither
-         * vertical key is pressed. This prevents gravity
-         * from making the boat fall.
-         */
+        * Explicitly control all velocity components.
+        * With no vertical key pressed, Y is exactly 0,
+        * preventing gravity from pulling the boat down.
+        */
         vehicle.setDeltaMovement(
             moveX * speedValue,
             vertical * speedValue,
             moveZ * speedValue
         );
-    }
 
+        // Prevent vanilla boat physics from applying gravity.
+        vehicle.setNoGravity(true);
+    }
     private boolean isControlDown() {
         try {
             /*
