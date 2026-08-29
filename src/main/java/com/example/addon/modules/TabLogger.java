@@ -4,8 +4,8 @@ import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.client.network.ServerInfo;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.client.multiplayer.ServerData;
 
 import com.example.addon.AddonTemplate;
 
@@ -47,11 +47,11 @@ public class TabLogger extends Module {
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
-        if (mc.world == null || mc.player == null || mc.getNetworkHandler() == null) return;
+        if (mc.level == null || mc.player == null || mc.getConnection() == null) return;
 
         Set<PlayerSnapshot> currentSnapshots = new HashSet<>();
 
-        for (PlayerListEntry entry : mc.getNetworkHandler().getPlayerList()) {
+        for (PlayerInfo entry : mc.getConnection().getOnlinePlayers()) {
             if (entry.getProfile() == null) continue;
 
             String uuid = entry.getProfile().id() != null ? entry.getProfile().id().toString() : "";
@@ -67,8 +67,8 @@ public class TabLogger extends Module {
         if (!currentSnapshots.equals(lastSnapshots)) {
             Set<PlayerSnapshot> snapshotToProcess = new HashSet<>(currentSnapshots);
             lastSnapshots = currentSnapshots;
-            ServerInfo server = mc.getCurrentServerEntry();
-            String serverIp = server != null ? server.address.replaceAll("[:]", "_") : "singleplayer";
+            ServerData server = mc.getCurrentServer();
+            String serverIp = server != null ? server.ip.replaceAll("[:]", "_") : "singleplayer";
             logExecutor.submit(() -> processAndWriteLogs(snapshotToProcess, serverIp));
         }
     }

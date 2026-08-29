@@ -4,7 +4,7 @@ import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import com.example.addon.AddonTemplate;
 
 
@@ -90,7 +90,7 @@ public class Flight extends Module {
         .build()
     );
 
-    private final MinecraftClient mc = MinecraftClient.getInstance();
+    private final Minecraft mc = Minecraft.getInstance();
     private boolean wasJumping = false;
     private boolean isFlying = false;
 
@@ -116,7 +116,7 @@ public class Flight extends Module {
         slowdownActive = 0;
 
         if (mc.player != null) {
-            mc.player.getAbilities().allowFlying = false;
+            mc.player.getAbilities().mayfly = false;
             mc.player.getAbilities().flying = false;
         }
     }
@@ -125,7 +125,7 @@ public class Flight extends Module {
     public void onDeactivate() {
         if (mc.player != null) {
             mc.player.getAbilities().flying = false;
-            mc.player.getAbilities().allowFlying = false;
+            mc.player.getAbilities().mayfly = false;
         }
     }
 
@@ -133,13 +133,13 @@ public class Flight extends Module {
     private void onTick(TickEvent.Pre event) {
         if (mc.player == null) return;
 
-        boolean isJumping = mc.options.jumpKey.isPressed();
+        boolean isJumping = mc.options.keyJump.isPressed();
 
         // Instant takeoff mode
         if (instantTakeoff.get()) {
             if (!isFlying && isJumping && !mc.player.isOnGround()) {
                 isFlying = true;
-                mc.player.getAbilities().allowFlying = true;
+                mc.player.getAbilities().mayfly = true;
                 mc.player.getAbilities().flying = true;
             }
         }
@@ -148,7 +148,7 @@ public class Flight extends Module {
         if (!wasJumping && isJumping) {
             if (jumpTimer > 0) {
                 isFlying = !isFlying;
-                mc.player.getAbilities().allowFlying = !isFlying;
+                mc.player.getAbilities().mayfly = !isFlying;
                 mc.player.getAbilities().flying = !isFlying;
                 jumpTimer = 0;
             } else {
@@ -162,26 +162,26 @@ public class Flight extends Module {
         // Reset on ground (vanilla behavior feel)
         if (mc.player.isOnGround() && isFlying && instantTakeoff.get()) {
             isFlying = false;
-            mc.player.getAbilities().allowFlying = false;
+            mc.player.getAbilities().mayfly = false;
             mc.player.getAbilities().flying = false;
         }
 
         // Apply allowFlying every tick
         if (enableEveryTick.get() && isFlying) {
-            mc.player.getAbilities().allowFlying = true;
+            mc.player.getAbilities().mayfly = true;
             mc.player.getAbilities().flying = true;
         }
 
         // Apply flight speed when flying
         if (isFlying && speedEnabled.get()) {
-            mc.player.getAbilities().setFlySpeed((float) (speed.get() * 0.05f));
+            mc.player.getAbilities().setFlyingSpeed((float) (speed.get() * 0.05f));
         }
 
         // Bypass Vanilla Anti-kick
-        if (isFlying && !mc.player.isOnGround() && bypassAntiKick.get() && mc.player.age % 10 < 2) {
+        if (isFlying && !mc.player.isOnGround() && bypassAntiKick.get() && mc.player.tickCount % 10 < 2) {
             mc.player.setVelocity(
                 mc.player.getVelocity().x,
-                mc.player.getVelocity().y + (mc.player.age % 10 == 0 ? -0.04 : 0.04),
+                mc.player.getVelocity().y + (mc.player.tickCount % 10 == 0 ? -0.04 : 0.04),
                 mc.player.getVelocity().z
             );
         }
@@ -190,7 +190,7 @@ public class Flight extends Module {
         if (antiSlowdown.get() && isFlying) {
             if (slowdownActive > 0) {
                 // mc.player.setVelocity(0, mc.player.getVelocity().y, 0);
-                mc.player.getAbilities().setFlySpeed((float) (slowdownSpeed.get() * 0.05f));
+                mc.player.getAbilities().setFlyingSpeed((float) (slowdownSpeed.get() * 0.05f));
                 slowdownActive--;
             } else {
                 slowdownTick++;

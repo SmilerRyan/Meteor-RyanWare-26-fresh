@@ -5,7 +5,7 @@ import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 
-import net.minecraft.network.packet.c2s.play.RequestCommandCompletionsC2SPacket;
+import net.minecraft.network.protocol.game.ServerboundCommandSuggestionPacket;
 
 import com.example.addon.AddonTemplate;
 
@@ -54,7 +54,7 @@ public class TabCompletePrivacy extends Module {
 
     @EventHandler
     private void onSend(PacketEvent.Send event) {
-        if (!(event.packet instanceof RequestCommandCompletionsC2SPacket packet)) return;
+        if (!(event.packet instanceof ServerboundCommandSuggestionPacket packet)) return;
 
         String command = packet.getPartialCommand();
         String lower = command.toLowerCase();

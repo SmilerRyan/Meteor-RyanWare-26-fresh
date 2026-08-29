@@ -9,8 +9,8 @@ import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
 import com.example.addon.AddonTemplate;
 
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.client.multiplayer.ClientPacketListener;
 
 import java.util.Comparator;
 import java.util.HashSet;
@@ -132,7 +132,7 @@ public class PlayerList extends Module {
     );
 
 
-    private List<PlayerListEntry> sortedPlayers;
+    private List<PlayerInfo> sortedPlayers;
     private static final Color BACKGROUND_COLOR = new Color(0, 0, 0, 160); // Semi-transparent black background
 
     public PlayerList() {
@@ -141,24 +141,24 @@ public class PlayerList extends Module {
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
-        if (mc.getNetworkHandler() == null) return;
-        ClientPlayNetworkHandler networkHandler = mc.getNetworkHandler();
+        if (mc.getConnection() == null) return;
+        ClientPacketListener networkHandler = mc.getConnection();
         
-        Comparator<PlayerListEntry> comparator;
+        Comparator<PlayerInfo> comparator;
         switch (sortMode.get()) {
             case Name:
                 comparator = Comparator.comparing(entry -> entry.getProfile().name(), String.CASE_INSENSITIVE_ORDER);
                 break;
             case PingHighToLow:
-                comparator = Comparator.comparingInt(PlayerListEntry::getLatency).reversed();
+                comparator = Comparator.comparingInt(PlayerInfo::getLatency).reversed();
                 break;
             case PingLowToHigh:
             default:
-                comparator = Comparator.comparingInt(PlayerListEntry::getLatency);
+                comparator = Comparator.comparingInt(PlayerInfo::getLatency);
                 break;
         }
 
-        sortedPlayers = networkHandler.getPlayerList().stream()
+        sortedPlayers = networkHandler.getOnlinePlayers().stream()
             .sorted(comparator)
             .collect(Collectors.toList());
     }
@@ -173,11 +173,11 @@ public class PlayerList extends Module {
         double scaleValue = scale.get();
         
         // Calculate dynamic line height based on font metrics and scale
-        int lineHeight = (int) (mc.textRenderer.fontHeight * scaleValue);
+        int lineHeight = (int) (mc.font.lineHeight * scaleValue);
         
         // Find highest ping to determine layout padding dynamically
         int maxPing = 0;
-        for (PlayerListEntry entry : sortedPlayers) {
+        for (PlayerInfo entry : sortedPlayers) {
             if (entry.getLatency() > maxPing) {
                 maxPing = entry.getLatency();
             }
@@ -185,14 +185,14 @@ public class PlayerList extends Module {
         int maxPingLength = String.valueOf(maxPing).length();
 
         // Track players with similar pings
-        Set<PlayerListEntry> similarPlayers = new HashSet<>();
+        Set<PlayerInfo> similarPlayers = new HashSet<>();
         if (similarPingEnable.get()) {
             int amount = similarPingAmount.get();
             int size = sortedPlayers.size();
             for (int i = 0; i < size; i++) {
-                PlayerListEntry p1 = sortedPlayers.get(i);
+                PlayerInfo p1 = sortedPlayers.get(i);
                 for (int j = i + 1; j < size; j++) {
-                    PlayerListEntry p2 = sortedPlayers.get(j);
+                    PlayerInfo p2 = sortedPlayers.get(j);
                     if (Math.abs(p1.getLatency() - p2.getLatency()) <= amount) {
                         similarPlayers.add(p1);
                         similarPlayers.add(p2);
@@ -202,15 +202,15 @@ public class PlayerList extends Module {
         }
 
         // Track players with double or half pings
-        Set<PlayerListEntry> doubleHalfPlayers = new HashSet<>();
+        Set<PlayerInfo> doubleHalfPlayers = new HashSet<>();
         if (doubleHalfEnable.get()) {
             int tolerance = doubleHalfAmount.get();
             int size = sortedPlayers.size();
             for (int i = 0; i < size; i++) {
-                PlayerListEntry p1 = sortedPlayers.get(i);
+                PlayerInfo p1 = sortedPlayers.get(i);
                 int lat1 = p1.getLatency();
                 for (int j = i + 1; j < size; j++) {
-                    PlayerListEntry p2 = sortedPlayers.get(j);
+                    PlayerInfo p2 = sortedPlayers.get(j);
                     int lat2 = p2.getLatency();
 
                     // Avoid matches where both players have 0 ping
@@ -228,11 +228,11 @@ public class PlayerList extends Module {
         // Calculate dimensions for the background dynamically using formatted text   
         double maxWidth = 0;
         int visiblePlayers = 0;
-        for (PlayerListEntry entry : sortedPlayers) {
+        for (PlayerInfo entry : sortedPlayers) {
             boolean matches = similarPlayers.contains(entry) || doubleHalfPlayers.contains(entry);
             if (hideNormalPlayers.get() && !matches) continue;
             String line = formatEntry(entry, maxPingLength);
-            double width = mc.textRenderer.getWidth(line) * scaleValue;
+            double width = mc.font.width(line) * scaleValue;
             if (width > maxWidth) maxWidth = width;
             visiblePlayers++;
         }
@@ -252,7 +252,7 @@ public class PlayerList extends Module {
         );
         
         // Draw each player entry
-        for (PlayerListEntry entry : sortedPlayers) {
+        for (PlayerInfo entry : sortedPlayers) {
             boolean matches = similarPlayers.contains(entry) || doubleHalfPlayers.contains(entry);
             if (hideNormalPlayers.get() && !matches) continue;
             
@@ -280,14 +280,14 @@ public class PlayerList extends Module {
             }
             
             // Push matrices using JOML's updated 2D Matrix API
-            event.drawContext.getMatrices().pushMatrix();
+            event.drawContext.pose().pushPose();
             
             // Use 2D scaling
-            event.drawContext.getMatrices().scale((float) scaleValue, (float) scaleValue);
+            event.drawContext.pose().scale((float) scaleValue, (float) scaleValue);
             
             // Draw text
             event.drawContext.drawText(
-                mc.textRenderer,
+                mc.font,
                 line,
                 (int) (x / scaleValue),
                 (int) (y / scaleValue),
@@ -296,13 +296,13 @@ public class PlayerList extends Module {
             );
             
             // Pop the matrix
-            event.drawContext.getMatrices().popMatrix();
+            event.drawContext.pose().popPose();
             
             y += lineHeight;
         }
     }
 
-    private String formatEntry(PlayerListEntry entry, int maxPingLength) {
+    private String formatEntry(PlayerInfo entry, int maxPingLength) {
         String name = entry.getProfile().name();
         int ping = entry.getLatency();
         

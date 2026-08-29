@@ -10,11 +10,8 @@ import meteordevelopment.meteorclient.settings.StringSetting;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.Text;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.c2s.play.ChatCommandSignedC2SPacket;
-import net.minecraft.network.packet.c2s.play.CommandExecutionC2SPacket;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 
 import com.example.addon.AddonTemplate;
 
@@ -63,7 +60,7 @@ public class ChatLogger extends Module {
 
     @EventHandler
     private void onReceiveMessage(ReceiveMessageEvent event) {
-        Text t = event.getMessage();
+        Component t = event.getMessage();
         if (t == null) return;
 
         log("[I] " + t.getString());
@@ -76,23 +73,10 @@ public class ChatLogger extends Module {
         log("[O] " + event.message);
     }
 
-    @EventHandler
-    private void onSendPacket(PacketEvent.Send e) {
-        Packet<?> p = e.packet;
-
-        if (p instanceof CommandExecutionC2SPacket cmd) {
-            log("[O] /" + cmd.command());
-        }
-
-        if (p instanceof ChatCommandSignedC2SPacket signed) {
-            log("[O] /" + signed.command());
-        }
-    }
-
     private void ensureSession() {
         if (logFile != null) return;
 
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
 
         String player = "unknown";
         if (mc.player != null && mc.player.getGameProfile() != null) {
@@ -100,8 +84,8 @@ public class ChatLogger extends Module {
         }
 
         String server = "singleplayer";
-        if (mc.getCurrentServerEntry() != null) {
-            server = mc.getCurrentServerEntry().address;
+        if (mc.getCurrentServer() != null) {
+            server = mc.getCurrentServer().address;
         }
 
         String date = new SimpleDateFormat("yyyy-MM-dd").format(new Date());

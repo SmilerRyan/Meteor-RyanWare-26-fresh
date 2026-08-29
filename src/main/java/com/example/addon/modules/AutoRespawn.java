@@ -6,7 +6,7 @@ import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.settings.StringListSetting;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.client.gui.screen.DeathScreen;
+import net.minecraft.client.gui.screens.DeathScreen;
 import com.example.addon.AddonTemplate;
 
 
@@ -38,7 +38,7 @@ public class AutoRespawn extends Module {
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
-        if (mc.world == null || mc.player == null) return;
+        if (mc.level == null || mc.player == null) return;
         if (!worldActive) {
             worldActive = true;
             joinGraceTicks = 0;
@@ -47,8 +47,8 @@ public class AutoRespawn extends Module {
             waitingForCommands = false;
             return;
         }
-        if (mc.currentScreen instanceof DeathScreen) {
-            mc.player.requestRespawn();
+        if (mc.screen instanceof DeathScreen) {
+            mc.player.respawn();
             mc.setScreen(null);
             waitingForCommands = true;
             commandQueue.clear();
@@ -63,7 +63,12 @@ public class AutoRespawn extends Module {
         if (waitingForCommands && commandIndex < commandQueue.size()) {
             String command = commandQueue.get(commandIndex);
             if (command != null && !command.isBlank()) {
-                smilerryan.ryanware.utils.SendChat.any(command);
+                String message = command.trim();
+                if (message.startsWith("/")) {
+                    mc.player.connection.sendCommand(message.substring(1));
+                } else {
+                    mc.player.connection.sendChat(message);
+                }
             }
             commandIndex++;
             if (commandIndex >= commandQueue.size()) {

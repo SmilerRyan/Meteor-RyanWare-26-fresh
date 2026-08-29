@@ -21,22 +21,22 @@ public class AutoWalkForwards extends Module {
     );
 
     public AutoWalkForwards() {
-        super(AddonTemplate.CATEGORY, "RyanWare-Auto-Walk-Forwards", "Automatically presses forwardKey for you.");
+        super(AddonTemplate.CATEGORY, "RyanWare-Auto-Walk-Forwards", "Automatically presses keyUp for you.");
     }
 
     @Override
     public void onDeactivate() {
         if (mc.options == null) return;
-        mc.options.forwardKey.setPressed(false);
-        if (autoJump.get()) mc.options.jumpKey.setPressed(false);
+        mc.options.keyUp.setPressed(false);
+        if (autoJump.get()) mc.options.keyJump.setPressed(false);
     }
 
     @EventHandler
     private void onTick(TickEvent.Pre event) {
         if (mc.player == null || mc.options == null) return;
-        mc.options.forwardKey.setPressed(true);
+        mc.options.keyUp.setPressed(true);
         if (autoJump.get()) {
-            mc.options.jumpKey.setPressed(!mc.options.sneakKey.isPressed());
+            mc.options.keyJump.setPressed(!mc.options.keyShift.isPressed());
         }
     }
 

@@ -15,13 +15,13 @@ public class ForceOpenTab extends Module {
     @Override
     public void onDeactivate() {
         if (mc.player == null || mc.options == null) return;
-        mc.options.playerListKey.setPressed(false);
+        mc.options.keyPlayerList.setPressed(false);
     }
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
         if (mc.player == null || mc.options == null) return;
-        mc.options.playerListKey.setPressed(true);
+        mc.options.keyPlayerList.setPressed(true);
     }
 
 }
