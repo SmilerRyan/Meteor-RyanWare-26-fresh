@@ -4,92 +4,138 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.commands.Command;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.command.CommandSource;
-
 import meteordevelopment.meteorclient.events.game.ReceiveMessageEvent;
+import meteordevelopment.meteorclient.systems.commands.CommandSource;
+import meteordevelopment.meteorclient.utils.player.ChatUtils;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
 import net.minecraft.util.Util;
-import meteordevelopment.orbit.EventBus;
-import meteordevelopment.meteorclient.MeteorClient;
 
-import java.io.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.mojang.brigadier.Command.SINGLE_SUCCESS;
 
 public class command_autoLogin extends Command {
-
     private static final File ryanwareDir = new File(MeteorClient.FOLDER, "ryanware");
     private static final File f = new File(ryanwareDir, "autologin.txt");
 
     public command_autoLogin() {
-        super("autoLogin", "Auto login per server + account");
+        super("autologin", "Auto login per server and account.");
     }
 
     @EventHandler
-    private void onMsg(ReceiveMessageEvent e) {
-        if (!e.getMessage().getString().contains("login")) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.player == null || mc.getCurrentServerEntry() == null) return;
-        String key = mc.getCurrentServerEntry().address + "|" + mc.getSession().getUsername() + "|";
-        for (String line : smilerryan.ryanware.commands.chat.command_autoLogin.load()) {
+    private void onMsg(ReceiveMessageEvent event) {
+        if (!event.getMessage().getString().toLowerCase().contains("login")) return;
+
+        Minecraft mc = Minecraft.getInstance();
+
+        if (mc.player == null || mc.getCurrentServer() == null) return;
+
+        String key = mc.getCurrentServer().ip + "|" + mc.getUser().getName() + "|";
+
+        for (String line : load()) {
             if (line.startsWith(key)) {
-                smilerryan.ryanware.utils.SendChat.command("login " + line.replace(key,""));
+                String password = line.substring(key.length());
+
+                if (!password.isEmpty()) {
+                    ChatUtils.sendPlayerMsg("/login " + password);
+                }
+
+                break;
             }
         }
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<CommandSource> b) {
-        b.then(argument("password/off/open", StringArgumentType.greedyString()).executes(c -> {
+    public void build(LiteralArgumentBuilder<CommandSource> builder) {
+        builder.then(
+            argument("password/off/open", StringArgumentType.greedyString())
+                .executes(context -> {
+                    String argument = StringArgumentType.getString(context, "password/off/open");
 
-            String argument = StringArgumentType.getString(c, "password/off/open");
+                    if (argument.equalsIgnoreCase("open")) {
+                        if (f.exists()) {
+                            Util.getPlatform().openFile(f);
+                        } else {
+                            f.getParentFile().mkdirs();
 
-            if (argument.equals("open")) {
-                if (f.exists()) {Util.getOperatingSystem().open(f);}
-                return SINGLE_SUCCESS;
-            }
+                            try {
+                                f.createNewFile();
+                                Util.getPlatform().openFile(f);
+                            } catch (IOException ignored) {
+                            }
+                        }
 
-            MinecraftClient mc = MinecraftClient.getInstance();
-            if (mc.player == null || mc.getCurrentServerEntry() == null) return SINGLE_SUCCESS;
+                        return SINGLE_SUCCESS;
+                    }
 
-            String server = mc.getCurrentServerEntry().address;
-            String username = mc.getSession().getUsername();
-            String key = server + "|" + username + "|";
-            
-            List<String> l = load();
+                    Minecraft mc = Minecraft.getInstance();
 
-            l.removeIf(s -> s.startsWith(key));
-            if (!argument.equals("off")) {
-                l.add(key + argument);
-            }
+                    if (mc.player == null || mc.getCurrentServer() == null) {
+                        error("You must be connected to a server.");
+                        return SINGLE_SUCCESS;
+                    }
 
-            f.getParentFile().mkdirs();
+                    String server = mc.getCurrentServer().ip;
+                    String username = mc.getUser().getName();
+                    String key = server + "|" + username + "|";
 
-            try (BufferedWriter w = new BufferedWriter(new FileWriter(f))) {
-                for (String s : l) {w.write(s+"\n");}
-            } catch (IOException ignored) {}
+                    List<String> lines = load();
 
-            info(
-                (argument.equals("off") ? "Cleared" : "Saved") + 
-                " password for " + username + 
-                " at " + server + "."
-            );
+                    lines.removeIf(s -> s.startsWith(key));
 
-            return SINGLE_SUCCESS;
-        }));
+                    if (!argument.equalsIgnoreCase("off")) {
+                        lines.add(key + argument);
+                    }
+
+                    File parent = f.getParentFile();
+
+                    if (parent != null) {
+                        parent.mkdirs();
+                    }
+
+                    try (BufferedWriter writer = new BufferedWriter(new FileWriter(f))) {
+                        for (String line : lines) {
+                            writer.write(line);
+                            writer.newLine();
+                        }
+                    } catch (IOException e) {
+                        error("Failed to save auto-login data.");
+                        return SINGLE_SUCCESS;
+                    }
+
+                    info(
+                        (argument.equalsIgnoreCase("off") ? "Cleared" : "Saved")
+                            + " password for " + username
+                            + " at " + server + "."
+                    );
+
+                    return SINGLE_SUCCESS;
+                })
+        );
     }
 
     public static List<String> load() {
-        List<String> l = new ArrayList<>();
-        if (!f.exists()) return l;
+        List<String> lines = new ArrayList<>();
 
-        try (BufferedReader r = new BufferedReader(new FileReader(f))) {
-            String s;
-            while ((s = r.readLine()) != null) l.add(s);
-        } catch (IOException ignored) {}
-        return l;
+        if (!f.exists()) return lines;
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(f))) {
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                lines.add(line);
+            }
+        } catch (IOException ignored) {
+        }
+
+        return lines;
     }
 }
