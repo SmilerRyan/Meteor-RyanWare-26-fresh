@@ -23,40 +23,42 @@ import java.util.List;
 import static com.mojang.brigadier.Command.SINGLE_SUCCESS;
 
 public class command_autoLogin extends Command {
-private static final File ryanwareDir = new File(MeteorClient.FOLDER, "ryanware");
-private static final File f = new File(ryanwareDir, "autologin.txt");
+    private static final File ryanwareDir = new File(MeteorClient.FOLDER, "ryanware");
+    private static final File f = new File(ryanwareDir, "autologin.txt");
 
-public command_autoLogin() {
-    super("autologin", "Auto login per server and account.");
-}
+    public command_autoLogin() {
+        super("autologin", "Auto login per server and account.");
 
-@EventHandler
-private void onMsg(ReceiveMessageEvent event) {
-    if (!event.getMessage().getString().toLowerCase().contains("login")) return;
+        MeteorClient.EVENT_BUS.subscribe(this);
+    }
 
-    Minecraft mc = Minecraft.getInstance();
+    @EventHandler
+    private void onMsg(ReceiveMessageEvent event) {
+        if (!event.getMessage().getString().toLowerCase().contains("login")) return;
 
-    if (mc.player == null || mc.getCurrentServer() == null) return;
+        Minecraft mc = Minecraft.getInstance();
 
-    String key = mc.getCurrentServer().ip + "|" + mc.getUser().getName() + "|";
+        if (mc.player == null || mc.getCurrentServer() == null) return;
 
-    for (String line : load()) {
-        if (line.startsWith(key)) {
-            String password = line.substring(key.length());
+        String key = mc.getCurrentServer().ip + "|" + mc.getUser().getName() + "|";
 
-            if (!password.isEmpty()) {
-                ChatUtils.sendPlayerMsg("/login " + password);
+        for (String line : load()) {
+            if (line.startsWith(key)) {
+                String password = line.substring(key.length());
+
+                if (!password.isEmpty()) {
+                    ChatUtils.sendPlayerMsg("/login " + password);
+                }
+
+                break;
             }
-
-            break;
         }
     }
-}
 
-@Override
-public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
-    builder.then(
-        argument("password/off/open", StringArgumentType.greedyString())
+    @Override
+    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
+        builder.then(
+            argument("password/off/open", StringArgumentType.greedyString())
             .executes(context -> {
                 String argument = StringArgumentType.getString(
                     context,
@@ -126,24 +128,23 @@ public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
 
                 return SINGLE_SUCCESS;
             })
-    );
-}
-
-public static List<String> load() {
-    List<String> lines = new ArrayList<>();
-
-    if (!f.exists()) return lines;
-
-    try (BufferedReader reader = new BufferedReader(new FileReader(f))) {
-        String line;
-
-        while ((line = reader.readLine()) != null) {
-            lines.add(line);
-        }
-    } catch (IOException ignored) {
+        );
     }
 
-    return lines;
-}
+    public static List<String> load() {
+        List<String> lines = new ArrayList<>();
 
+        if (!f.exists()) return lines;
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(f))) {
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                lines.add(line);
+            }
+        } catch (IOException ignored) {
+        }
+
+        return lines;
+    }
 }
