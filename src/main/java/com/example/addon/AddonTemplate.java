@@ -1,5 +1,6 @@
 package com.example.addon;
 
+import com.example.addon.commands.*;
 import com.example.addon.modules.*;
 import com.mojang.logging.LogUtils;
 import meteordevelopment.meteorclient.addons.GithubRepo;
@@ -25,6 +26,7 @@ public class AddonTemplate extends MeteorAddon {
         Modules.get().add(new PlayerList());
         Modules.get().add(new TabCompletePrivacy());
         Modules.get().add(new TabLogger());
+        Commands.get().add(new command_autoLogin());
     }
 
     @Override
