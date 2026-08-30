@@ -5,7 +5,7 @@ import com.example.addon.modules.*;
 import com.mojang.logging.LogUtils;
 import meteordevelopment.meteorclient.addons.GithubRepo;
 import meteordevelopment.meteorclient.addons.MeteorAddon;
-import meteordevelopment.meteorclient.systems.commands.Commands;
+import meteordevelopment.meteorclient.commands.Commands;
 import meteordevelopment.meteorclient.systems.modules.Category;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import org.slf4j.Logger;
@@ -15,7 +15,7 @@ public class AddonTemplate extends MeteorAddon {
     public static final Category CATEGORY = new Category("RyanWare");
 
     @Override
-    public void onInitialize() {    
+    public void onInitialize() {
         Modules.get().add(new AutoRespawn());
         Modules.get().add(new AutoWalkForwards());
         Modules.get().add(new ChatLogger());
@@ -27,7 +27,8 @@ public class AddonTemplate extends MeteorAddon {
         Modules.get().add(new PlayerList());
         Modules.get().add(new TabCompletePrivacy());
         Modules.get().add(new TabLogger());
-        Commands.get().add(new command_autoLogin());
+
+        Commands.add(new command_autoLogin());
     }
 
     @Override

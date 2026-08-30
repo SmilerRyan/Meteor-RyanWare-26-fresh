@@ -5,10 +5,10 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.commands.Command;
 import meteordevelopment.meteorclient.events.game.ReceiveMessageEvent;
-import meteordevelopment.meteorclient.systems.commands.CommandSource;
 import meteordevelopment.meteorclient.utils.player.ChatUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.client.Minecraft;
+import net.minecraft.command.CommandSource;
 import net.minecraft.util.Util;
 
 import java.io.BufferedReader;
@@ -58,19 +58,26 @@ public class command_autoLogin extends Command {
         builder.then(
             argument("password/off/open", StringArgumentType.greedyString())
                 .executes(context -> {
-                    String argument = StringArgumentType.getString(context, "password/off/open");
+                    String argument = StringArgumentType.getString(
+                        context,
+                        "password/off/open"
+                    );
 
                     if (argument.equalsIgnoreCase("open")) {
-                        if (f.exists()) {
-                            Util.getPlatform().openFile(f);
-                        } else {
-                            f.getParentFile().mkdirs();
+                        File parent = f.getParentFile();
 
-                            try {
+                        if (parent != null) {
+                            parent.mkdirs();
+                        }
+
+                        try {
+                            if (!f.exists()) {
                                 f.createNewFile();
-                                Util.getPlatform().openFile(f);
-                            } catch (IOException ignored) {
                             }
+
+                            Util.getPlatform().openFile(f);
+                        } catch (IOException e) {
+                            error("Failed to open auto-login file.");
                         }
 
                         return SINGLE_SUCCESS;
@@ -101,7 +108,9 @@ public class command_autoLogin extends Command {
                         parent.mkdirs();
                     }
 
-                    try (BufferedWriter writer = new BufferedWriter(new FileWriter(f))) {
+                    try (BufferedWriter writer = new BufferedWriter(
+                        new FileWriter(f)
+                    )) {
                         for (String line : lines) {
                             writer.write(line);
                             writer.newLine();
@@ -127,7 +136,9 @@ public class command_autoLogin extends Command {
 
         if (!f.exists()) return lines;
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(f))) {
+        try (BufferedReader reader = new BufferedReader(
+            new FileReader(f)
+        )) {
             String line;
 
             while ((line = reader.readLine()) != null) {
